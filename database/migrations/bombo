@@ -1,0 +1,732 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="container mx-auto my-8">
+    <h1 class="text-3xl font-semibold mb-6">Create Loan Product</h1>
+
+    {{-- Validation Errors --}}
+    @if ($errors->any())
+        <div class="mb-6 p-4 bg-red-100 text-red-700 rounded">
+            <ul class="list-disc pl-5">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form action="{{ route('loanProducts.store') }}" method="POST" class="space-y-6 bg-white p-6 rounded shadow">
+        @csrf
+
+        <!-- Basic Info -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {{-- Name --}}
+            <div>
+                <label for="name" class="block font-medium">Name</label>
+                <input type="text" name="name" id="name"
+                       value="{{ old('name') }}"
+                       class="mt-1 w-full border p-2 rounded"
+                       placeholder="Enter loan product name"
+                       required>
+            </div>
+
+            {{-- Unique ID --}}
+            <div>
+                <label for="unique_id" class="block font-medium">Unique ID</label>
+                <input type="text" name="unique_id" id="unique_id"
+                       value="{{ old('unique_id') }}"
+                       class="mt-1 w-full border p-2 rounded"
+                       placeholder="Enter unique ID"
+                       required>
+            </div>
+
+            <!-- Branch Access Section -->
+     <div x-data="{ open: false }" class="border border-gray-200 rounded-2xl shadow-sm bg-white overflow-hidden mt-6">
+     <!-- Section toggle -->
+     <div 
+        @click="open = !open" 
+        class="flex justify-between items-center px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
+     >
+        <h3 class="text-lg font-semibold text-gray-800">Branch Access</h3>
+        <span x-show="!open" class="text-gray-400">+</span>
+        <span x-show="open" class="text-red-400 text-sm">✕</span>
+     </div>
+
+     <!-- Collapsible content -->
+     <div x-show="open" x-transition.duration.300ms class="p-4 space-y-4">
+        <p class="text-sm text-gray-600">
+            Choose whether this loan product is accessible to all branches or only a specific one. You can also set the primary branch.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Branch Access Dropdown -->
+            <div>
+                <label for="branch_access" class="block text-sm font-medium text-gray-700">Branch Access</label>
+                <select name="branch_access" id="branch_access"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">-- Select --</option>
+                    <option value="all" {{ old('branch_access')=='all' ? 'selected' : '' }}>All</option>
+                    <option value="specific" {{ old('branch_access')=='specific' ? 'selected' : '' }}>Specific</option>
+                </select>
+            </div>
+
+            <!-- Primary Branch Dropdown -->
+            <div>
+                <label for="branch_id" class="block text-sm font-medium text-gray-700">Primary Branch</label>
+                <select name="branch_id" id="branch_id"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">-- None --</option>
+                    @foreach($branches as $b)
+                        <option value="{{ $b->id }}" {{ old('branch_id') == $b->id ? 'selected' : '' }}>
+                            {{ $b->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Add/Edit Branch Button -->
+            <div class="sm:col-span-2">
+                <a href="{{ route('branches.index') }}"
+                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-md shadow-sm transition">
+                    Add / Edit Branch
+                </a>
+            </div>
+        </div>
+     </div>
+     </div>
+
+
+           <!-- Penalty Settings Section -->
+<div x-data="{ open: false }" class="border border-gray-200 rounded-2xl shadow-sm bg-white overflow-hidden mt-6">
+    <!-- Section toggle -->
+    <div 
+        @click="open = !open" 
+        class="flex justify-between items-center px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
+    >
+        <h3 class="text-lg font-semibold text-gray-800">Penalty Settings</h3>
+        <span x-show="!open" class="text-gray-400">+</span>
+        <span x-show="open" class="text-red-400 text-sm">✕</span>
+    </div>
+
+    <!-- Collapsible content -->
+    <div x-show="open" x-transition.duration.300ms class="p-4 space-y-4">
+        <p class="text-sm text-gray-600">
+            Configure how penalties are applied for overdue payments. Choose fixed or percentage penalties, set the application frequency, and specify any grace period.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Penalty Type -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Penalty Type</label>
+                <select name="penalty_type"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="fixed" @selected(old('penalty_type') == 'fixed')>Fixed Amount</option>
+                    <option value="percentage" @selected(old('penalty_type') == 'percentage')>Percentage</option>
+                </select>
+            </div>
+
+            <!-- Penalty Value -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Penalty Value</label>
+                <input type="number" step="0.01" name="penalty_value" value="{{ old('penalty_value') }}"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="e.g., 5 or 2%">
+            </div>
+
+            <!-- Penalty Frequency -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Penalty Frequency</label>
+                <select name="penalty_frequency"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="daily" @selected(old('penalty_frequency') == 'daily')>Daily</option>
+                    <option value="weekly" @selected(old('penalty_frequency') == 'weekly')>Weekly</option>
+                    <option value="once" @selected(old('penalty_frequency') == 'once')>Once After Due Date</option>
+                </select>
+            </div>
+
+            <!-- Grace Period -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Grace Period (days)</label>
+                <input type="number" name="grace_period" value="{{ old('grace_period', 0) }}"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+        <!-- Loan Release Date Section -->
+<div x-data="{ open: false }" class="border border-gray-200 rounded-2xl shadow-sm bg-white overflow-hidden mt-6">
+    <!-- Section toggle -->
+    <div 
+        @click="open = !open" 
+        class="flex justify-between items-center px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
+    >
+        <h3 class="text-lg font-semibold text-gray-800">Loan Release Date</h3>
+        <span x-show="!open" class="text-gray-400">+</span>
+        <span x-show="open" class="text-red-400 text-sm">✕</span>
+    </div>
+
+    <!-- Collapsible content -->
+    <div x-show="open" x-transition.duration.300ms class="p-4 space-y-4">
+        <p class="text-sm text-gray-600">
+            You can optionally pre-set the loan release date or default it to today's date.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Toggle for setting to today's date -->
+            <div>
+                <label for="loan_release_date_enabled" class="block text-sm font-medium text-gray-700">
+                    Set Loan Release Date to Today's Date
+                </label>
+                <select name="loan_release_date_enabled" id="loan_release_date_enabled"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="no" @selected(old('loan_release_date_enabled') == 'no')>No</option>
+                    <option value="yes" @selected(old('loan_release_date_enabled') == 'yes')>Yes</option>
+                </select>
+            </div>
+
+            <!-- Date Picker -->
+            <div>
+                <label for="loan_release_date" class="block text-sm font-medium text-gray-700">Loan Release Date</label>
+                <input type="date" name="loan_release_date" id="loan_release_date"
+                    value="{{ old('loan_release_date', old('loan_release_date_enabled') == 'yes' ? now()->toDateString() : '') }}"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="Select loan release date">
+            </div>
+        </div>
+    </div>
+</div>
+
+   <!-- ===================== Interest Section ===================== -->
+<div x-data="{ open: false }" class="border border-gray-200 rounded-2xl shadow-sm bg-white overflow-hidden mt-6">
+    <!-- Section toggle -->
+    <div 
+        @click="open = !open" 
+        class="flex justify-between items-center px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
+    >
+        <h3 class="text-lg font-semibold text-gray-800">Interest</h3>
+        <span x-show="!open" class="text-gray-400">+</span>
+        <span x-show="open" class="text-red-400 text-sm">✕</span>
+    </div>
+
+    <!-- Collapsible content -->
+    <div x-show="open" x-transition.duration.300ms class="p-4 space-y-6">
+        <p class="text-sm text-gray-600">
+            Configure the interest settings, including method, type, and applicable periods.
+        </p>
+
+        <!-- Interest Method & Type -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="interest_method" class="block text-sm font-medium text-gray-700">Interest Method</label>
+                <select name="interest_method" id="interest_method"
+                    class="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('interest_method') border-red-500 @enderror">
+                    <option value="">-- Select Method --</option>
+                    <option value="flat" @selected(old('interest_method') == 'flat')>Flat</option>
+                    <option value="reducing_balance" @selected(old('interest_method') == 'reducing_balance')>Reducing Balance</option>
+                </select>
+                @error('interest_method')
+                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                @enderror
+            </div>
+
+            <div>
+                <label for="interest_type" class="block text-sm font-medium text-gray-700">Interest Type</label>
+                <select name="interest_type" id="interest_type"
+                    class="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('interest_type') border-red-500 @enderror">
+                    <option value="">-- Select Type --</option>
+                    <option value="percentage" @selected(old('interest_type') == 'percentage')>Percentage (%)</option>
+                    <option value="fixed" @selected(old('interest_type') == 'fixed')>Fixed Amount Per Cycle</option>
+                </select>
+                @error('interest_type')
+                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                @enderror
+            </div>
+        </div>
+
+        <!-- Interest Range Inputs -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label for="min_interest_rate" class="block text-sm font-medium text-gray-700">Minimum Loan Interest</label>
+                <input type="number" step="0.01" min="0" name="min_interest_rate" id="min_interest_rate"
+                       value="{{ old('min_interest_rate') }}"
+                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('min_interest_rate') border-red-500 @enderror"
+                       placeholder="Enter minimum interest">
+                @error('min_interest_rate')
+                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                @enderror
+            </div>
+
+            <div>
+                <label for="default_interest_rate" class="block text-sm font-medium text-gray-700">Default Loan Interest</label>
+                <input type="number" step="0.01" min="0" name="default_interest_rate" id="default_interest_rate"
+                       value="{{ old('default_interest_rate') }}"
+                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('default_interest_rate') border-red-500 @enderror"
+                       placeholder="Enter default interest">
+                @error('default_interest_rate')
+                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                @enderror
+            </div>
+
+            <div>
+                <label for="max_interest_rate" class="block text-sm font-medium text-gray-700">Maximum Loan Interest</label>
+                <input type="number" step="0.01" min="0" name="max_interest_rate" id="max_interest_rate"
+                       value="{{ old('max_interest_rate') }}"
+                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('max_interest_rate') border-red-500 @enderror"
+                       placeholder="Enter maximum interest">
+                @error('max_interest_rate')
+                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                @enderror
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== Principal Section ===================== -->
+<div x-data="{ open: false }" class="border border-gray-200 rounded-2xl shadow-sm bg-white overflow-hidden mt-6">
+    <!-- Section toggle -->
+    <div @click="open = !open" class="flex justify-between items-center px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition">
+        <h3 class="text-lg font-semibold text-gray-800">Principal</h3>
+        <span x-show="!open" class="text-gray-400">+</span>
+        <span x-show="open" class="text-red-400 text-sm">✕</span>
+    </div>
+
+    <!-- Collapsible content -->
+    <div x-show="open" x-transition.duration.300ms class="p-4 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Minimum Principal -->
+            <div>
+                <label for="min_principal" class="block text-sm font-medium text-gray-700">Minimum Principal</label>
+                <input type="number" id="min_principal" name="min_principal"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    value="{{ old('min_principal', $loanProduct->min_principal ?? '') }}" required step="any">
+            </div>
+
+            <!-- Default Principal -->
+            <div>
+                <label for="default_principal" class="block text-sm font-medium text-gray-700">Default Principal</label>
+                <input type="number" id="default_principal" name="default_principal"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    value="{{ old('default_principal', $loanProduct->default_principal ?? '') }}" required step="any">
+            </div>
+
+            <!-- Maximum Principal -->
+            <div>
+                <label for="max_principal" class="block text-sm font-medium text-gray-700">Maximum Principal</label>
+                <input type="number" id="max_principal" name="max_principal"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    value="{{ old('max_principal', $loanProduct->max_principal ?? '') }}" required step="any">
+            </div>
+
+            <!-- Disbursed By -->
+            <div>
+                <label for="disbursed_by" class="block text-sm font-medium text-gray-700">Disbursed By</label>
+                <select id="disbursed_by" name="disbursed_by"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">-- Select Disburser --</option>
+                    @foreach ($disbursers as $disbursers)
+                        <option value="{{ $disbursers->id }}"
+
+                            {{ old('disbursed_by', $loanProduct->disbursed_by ?? '') == $disbursers->id ? 'selected' : '' }}>{{ $disbursers->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Release Today -->
+            <div class="sm:col-span-2 flex items-center mt-2">
+                <input type="checkbox" id="release_today" name="release_today" class="text-blue-600 border-gray-300 rounded"
+                    value="1" {{ old('release_today', $loanProduct->release_today ?? false) ? 'checked' : '' }}>
+                <label for="release_today" class="ml-2 text-sm font-medium text-gray-700">Release Today</label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== Duration Section ===================== -->
+<div x-data="{ open: false }" class="border border-gray-200 rounded-2xl shadow-sm bg-white overflow-hidden mt-6">
+    <!-- Section toggle -->
+    <div @click="open = !open" class="flex justify-between items-center px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition">
+        <h3 class="text-lg font-semibold text-gray-800">Loan Duration</h3>
+        <span x-show="!open" class="text-gray-400">+</span>
+        <span x-show="open" class="text-red-400 text-sm">✕</span>
+    </div>
+
+    <!-- Collapsible content -->
+    <div x-show="open" x-transition.duration.300ms class="p-4 space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Minimum Duration -->
+            <div>
+                <label for="min_duration" class="block text-sm font-medium text-gray-700">Minimum Duration (Months)</label>
+                <input type="number" name="min_duration" id="min_duration"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    value="{{ old('min_duration', $loanProduct->min_duration ?? '') }}" required step="any">
+            </div>
+
+            <!-- Default Duration -->
+            <div>
+                <label for="default_duration" class="block text-sm font-medium text-gray-700">Default Duration (Months)</label>
+                <input type="number" name="default_duration" id="default_duration"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    value="{{ old('default_duration', $loanProduct->default_duration ?? '') }}" required step="any">
+            </div>
+
+            <!-- Maximum Duration -->
+            <div>
+                <label for="max_duration" class="block text-sm font-medium text-gray-700">Maximum Duration (Months)</label>
+                <input type="number" name="max_duration" id="max_duration"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    value="{{ old('max_duration', $loanProduct->max_duration ?? '') }}" required step="any">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Collapsing Section -->
+<script>
+    function toggleSection(sectionId) {
+        const section = document.getElementById(sectionId);
+        section.classList.toggle('hidden');
+    }
+</script>
+
+
+<!-- Loan Due and Loan Schedule Amounts Section (Collapsible) -->
+<div x-data="{ open: false }" class="border border-gray-200 rounded-2xl shadow-sm bg-white overflow-hidden mt-6">
+    <!-- Section toggle -->
+    <div 
+        @click="open = !open" 
+        class="flex justify-between items-center px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
+    >
+        <h3 class="text-lg font-semibold text-gray-800">Loan Due and Loan Schedule Amounts</h3>
+        <span x-show="!open" class="text-gray-400">+</span>
+        <span x-show="open" class="text-red-400 text-sm">✕</span>
+    </div>
+
+    <!-- Collapsible content -->
+    <div x-show="open" x-transition.duration.300ms class="p-4 space-y-4">
+        <p class="text-sm text-gray-600">
+            If Loan Due amount and/or Schedule amounts are in decimals (e.g., $100.33333), the system will convert them based on the selected option below.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Decimal Places -->
+            <div>
+                <label for="decimal_places" class="block text-sm font-medium text-gray-700">Decimal Places</label>
+                <select name="decimal_places" id="decimal_places" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    @for ($i = 0; $i <= 5; $i++)
+                        <option value="{{ $i }}" {{ old('decimal_places') == $i ? 'selected' : '' }}>
+                            {{ $i }} {{ $i == 1 ? 'decimal place' : 'decimal places' }}
+                        </option>
+                    @endfor
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Repayment Order Section (Collapsible) -->
+<div x-data="{ open: false }" class="border border-gray-200 rounded-2xl shadow-sm bg-white overflow-hidden mt-6">
+    <!-- Section toggle -->
+    <div 
+        @click="open = !open" 
+        class="flex justify-between items-center px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
+    >
+        <h3 class="text-lg font-semibold text-gray-800">Repayment Order</h3>
+        <span x-show="!open" class="text-gray-400">+</span>
+        <span x-show="open" class="text-red-400 text-sm">✕</span>
+    </div>
+
+    <!-- Collapsible content -->
+    <div x-show="open" x-transition.duration.300ms class="p-4 space-y-4">
+        <p class="text-sm text-gray-700 mb-4">
+            Define the order in which payments are applied: Fees, Principal, Interest, Penalty.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Priority 1 -->
+            <div>
+                <label for="repayment_order_1" class="block text-sm font-medium text-gray-700">Priority 1</label>
+                <select name="repayment_order_1" id="repayment_order_1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">-- Select --</option>
+                    <option value="penalty" {{ old('repayment_order_1') == 'penalty' ? 'selected' : '' }}>Penalty</option>
+                    <option value="fees" {{ old('repayment_order_1') == 'fees' ? 'selected' : '' }}>Fees</option>
+                    <option value="interest" {{ old('repayment_order_1') == 'interest' ? 'selected' : '' }}>Interest</option>
+                    <option value="principal" {{ old('repayment_order_1') == 'principal' ? 'selected' : '' }}>Principal</option>
+                </select>
+            </div>
+
+            <!-- Priority 2 -->
+            <div>
+                <label for="repayment_order_2" class="block text-sm font-medium text-gray-700">Priority 2</label>
+                <select name="repayment_order_2" id="repayment_order_2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">-- Select --</option>
+                    <option value="penalty" {{ old('repayment_order_2') == 'penalty' ? 'selected' : '' }}>Penalty</option>
+                    <option value="fees" {{ old('repayment_order_2') == 'fees' ? 'selected' : '' }}>Fees</option>
+                    <option value="interest" {{ old('repayment_order_2') == 'interest' ? 'selected' : '' }}>Interest</option>
+                    <option value="principal" {{ old('repayment_order_2') == 'principal' ? 'selected' : '' }}>Principal</option>
+                </select>
+            </div>
+
+            <!-- Priority 3 -->
+            <div>
+                <label for="repayment_order_3" class="block text-sm font-medium text-gray-700">Priority 3</label>
+                <select name="repayment_order_3" id="repayment_order_3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">-- Select --</option>
+                    <option value="penalty" {{ old('repayment_order_3') == 'penalty' ? 'selected' : '' }}>Penalty</option>
+                    <option value="fees" {{ old('repayment_order_3') == 'fees' ? 'selected' : '' }}>Fees</option>
+                    <option value="interest" {{ old('repayment_order_3') == 'interest' ? 'selected' : '' }}>Interest</option>
+                    <option value="principal" {{ old('repayment_order_3') == 'principal' ? 'selected' : '' }}>Principal</option>
+                </select>
+            </div>
+
+            <!-- Priority 4 -->
+            <div>
+                <label for="repayment_order_4" class="block text-sm font-medium text-gray-700">Priority 4</label>
+                <select name="repayment_order_4" id="repayment_order_4" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">-- Select --</option>
+                    <option value="penalty" {{ old('repayment_order_4') == 'penalty' ? 'selected' : '' }}>Penalty</option>
+                    <option value="fees" {{ old('repayment_order_4') == 'fees' ? 'selected' : '' }}>Fees</option>
+                    <option value="interest" {{ old('repayment_order_4') == 'interest' ? 'selected' : '' }}>Interest</option>
+                    <option value="principal" {{ old('repayment_order_4') == 'principal' ? 'selected' : '' }}>Principal</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mt-4 text-sm text-red-600">
+            <strong>Note:</strong> Changing the order will update <strong>Open Loans</strong> accordingly.
+        </div>
+    </div>
+</div>
+
+<!-- Automated Payments Section -->
+<div x-data="{ open: false }" class="border rounded-md mb-6 shadow-sm">
+    <div @click="open = !open" :aria-expanded="open.toString()" class="cursor-pointer bg-gray-100 px-4 py-3 flex justify-between items-center">
+        <h3 class="font-semibold text-gray-800">Automated Payments</h3>
+        <svg :class="{ 'rotate-180': open }" class="h-5 w-5 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </div>
+
+    <div x-show="open" class="p-4 space-y-4">
+        <p class="text-sm text-gray-600">
+            Enabling this option will automatically post due payments on the scheduled dates for loans under this product.
+        </p>
+
+        <!-- Enable Automatic Payments -->
+        <div class="flex items-center space-x-4">
+            <label class="font-medium text-gray-700">Enable Auto Payments</label>
+            <label class="inline-flex items-center">
+                <input type="radio" name="auto_add_payments" value="0" class="form-radio text-red-600" {{ old('auto_add_payments', $loanProduct->auto_add_payments ?? 0) == 0 ? 'checked' : '' }}>
+                <span class="ml-2">No</span>
+            </label>
+            <label class="inline-flex items-center">
+                <input type="radio" name="auto_add_payments" value="1" class="form-radio text-green-600" {{ old('auto_add_payments', $loanProduct->auto_add_payments ?? 0) == 1 ? 'checked' : '' }}>
+                <span class="ml-2">Yes</span>
+            </label>
+        </div>
+
+        <!-- Time Range -->
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-gray-700 font-medium mb-1">
+                    Start Time <span title="Start time for auto-payment posting" class="text-xs text-gray-500 ml-1">ⓘ</span>
+                </label>
+                <input type="time" name="payment_time_start" value="{{ old('payment_time_start', $loanProduct->payment_time_start ?? '') }}" class="w-full border-gray-300 rounded-md shadow-sm">
+            </div>
+            <div>
+                <label class="block text-gray-700 font-medium mb-1">
+                    End Time <span title="End time for auto-payment posting" class="text-xs text-gray-500 ml-1">ⓘ</span>
+                </label>
+                <input type="time" name="payment_time_end" value="{{ old('payment_time_end', $loanProduct->payment_time_end ?? '') }}" class="w-full border-gray-300 rounded-md shadow-sm">
+            </div>
+        </div>
+
+        <!-- Account Type + Conditional Account Name -->
+        <div x-data="{ accountType: '{{ old('auto_payment_account_type', $loanProduct->auto_payment_account_type ?? 'cash') }}' }">
+            <label class="block text-gray-700 font-medium mb-1">Payment Account</label>
+            <select name="auto_payment_account_type" x-model="accountType" class="w-full border-gray-300 rounded-md shadow-sm">
+                <option value="cash">Cash</option>
+                <option value="bank">Bank</option>
+            </select>
+
+            <!-- Shows if "Bank" selected -->
+            <div x-show="accountType === 'bank'" class="mt-4">
+                <label class="block text-gray-700 font-medium mb-1">Bank Account Name</label>
+                <input type="text" name="auto_payment_account_name" value="{{ old('auto_payment_account_name', $loanProduct->auto_payment_account_name ?? '') }}" class="w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter bank account name">
+            </div>
+        </div>
+
+        <p class="text-sm text-gray-600 mt-2">
+            Select the account for payment receipt. This ensures proper journal entry.
+        </p>
+    </div>
+</div>
+
+
+{{-- Fees Section --}}
+<div x-data="{ open: true, showModal: false, selectedFees: [] }" class="border rounded-md mb-6 shadow-sm">
+    <div @click="open = !open" :aria-expanded="open.toString()" class="cursor-pointer bg-gray-100 px-4 py-3 flex justify-between items-center">
+        <h3 class="font-semibold text-gray-800">Fees</h3>
+        <svg :class="{ 'rotate-180': open }" class="h-5 w-5 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </div>
+
+    <div x-show="open" class="p-4 space-y-4">
+        {{-- Add/Edit Fee Button --}}
+        <div class="flex justify-end">
+            <button type="button" @click="showModal = true"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm shadow-md transition-all duration-300">
+                + Add/Edit Fee
+            </button>
+        </div>
+
+        {{-- Fee Dropdown --}}
+        <div>
+            <label for="fees" class="block text-gray-700 font-medium mb-2">Select Fees</label>
+            <select name="fee_ids[]" id="fees" multiple x-model="selectedFees" class="w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white p-2.5 text-gray-800 text-sm transition-all duration-300">
+                @foreach ($fees as $fee)
+                    <option value="{{ $fee->id }}" class="text-sm">{{ $fee->name }} ({{ ucfirst($fee->fee_type) }})</option>
+                @endforeach
+            </select>
+            <p class="text-sm text-gray-600 mt-2">Hold Ctrl (Cmd) to select multiple fees from the dropdown.</p>
+        </div>
+    </div>
+
+    {{-- Fee Modal --}}
+    <div x-show="showModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4 overflow-auto" x-cloak>
+        <div @click.away="showModal = false" class="bg-white w-full max-w-2xl rounded-lg shadow-xl p-6 relative max-h-[90vh] overflow-y-auto transition-all duration-300 transform hover:scale-105">
+            {{-- Close Button --}}
+            <button class="absolute top-2 right-2 text-gray-500 hover:text-black text-2xl font-bold" @click="showModal = false">&times;</button>
+
+            {{-- Modal Title --}}
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Add New Fee</h2>
+
+            {{-- Modal Form --}}
+            <form method="POST" action="{{ route('fees.store') }}">
+                @csrf
+                @include('fees._form')
+
+                <div class="mt-6 text-right">
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm shadow-md transition-all duration-300">
+                        Save Fee
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+{{-- Extend Loan After Maturity Section --}}
+<div x-data="{ open: false }" class="border rounded-md mb-6 shadow-sm">
+    <div @click="open = !open" :aria-expanded="open.toString()" class="cursor-pointer bg-gray-100 px-4 py-3 flex justify-between items-center">
+        <h3 class="font-semibold text-gray-800">Extend Loan After Maturity Until Fully Paid</h3>
+        <svg :class="{ 'rotate-180': open }" class="h-5 w-5 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </div>
+
+    <div x-show="open" class="p-4 space-y-4">
+    {{-- Extend Loan After Maturity Section --}}
+<div x-data="{ open: false }" class="border rounded-md mb-6 shadow-sm">
+    <div @click="open = !open" :aria-expanded="open.toString()" class="cursor-pointer bg-gray-100 px-4 py-3 flex justify-between items-center">
+        <h3 class="font-semibold text-gray-800">Extend Loan After Maturity Until Fully Paid</h3>
+        <svg :class="{ 'rotate-180': open }" class="h-5 w-5 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </div>
+
+    <div x-show="open" x-transition.duration.300ms class="p-4 space-y-4 bg-white">
+        <div>
+            <label class="block font-medium text-gray-700">Extend Loan After Maturity:</label>
+            <select name="extend_after_maturity" class="w-full border rounded-md shadow-sm p-2.5">
+                <option value="0" @selected(old('extend_after_maturity') == 0)>No</option>
+                <option value="1" @selected(old('extend_after_maturity') == 1)>Yes</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-medium text-gray-700">Interest Type:</label>
+            <select name="maturity_interest_type" class="w-full border rounded-md shadow-sm p-2.5">
+                <option value="percentage" @selected(old('maturity_interest_type') == 'percentage')>Percentage % based</option>
+                <option value="fixed" @selected(old('maturity_interest_type') == 'fixed')>Fixed Amount</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-medium text-gray-700">Calculate Interest On:</label>
+            <select name="maturity_interest_base" class="w-full border rounded-md shadow-sm p-2.5">
+                <option value="principal" @selected(old('maturity_interest_base') == 'principal')>Principal</option>
+                <option value="interest" @selected(old('maturity_interest_base') == 'interest')>Interest</option>
+                <option value="both" @selected(old('maturity_interest_base') == 'both')>Principal and Interest</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-medium text-gray-700">Loan Interest Rate After Maturity (%)</label>
+            <input type="text" name="maturity_interest_rate" value="{{ old('maturity_interest_rate') }}" class="w-full border rounded-md shadow-sm p-2.5" placeholder="e.g. 5.5">
+        </div>
+
+        <div>
+            <label class="block font-medium text-gray-700">Recurring Period After Maturity:</label>
+            <input type="text" name="maturity_recurring_period" value="{{ old('maturity_recurring_period') }}" class="w-full border rounded-md shadow-sm p-2.5" placeholder="e.g. Monthly">
+        </div>
+
+        <div>
+            <label class="block font-medium text-gray-700">Number of Repayments After Maturity:</label>
+            <input type="number" name="maturity_repayment_count" value="{{ old('maturity_repayment_count') }}" class="w-full border rounded-md shadow-sm p-2.5" placeholder="Leave 0 for unlimited">
+        </div>
+
+        <div>
+            <label class="block font-medium text-gray-700">Include Fees After Maturity:</label>
+            <select name="include_fees_after_maturity" class="w-full border rounded-md shadow-sm p-2.5">
+                <option value="0" @selected(old('include_fees_after_maturity') == 0)>No</option>
+                <option value="1" @selected(old('include_fees_after_maturity') == 1)>Yes</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-medium text-gray-700">Keep Loan Status as Past Maturity After Extension:</label>
+            <select name="keep_status_past_maturity" class="w-full border rounded-md shadow-sm p-2.5">
+                <option value="0" @selected(old('keep_status_past_maturity') == 0)>No</option>
+                <option value="1" @selected(old('keep_status_past_maturity') == 1)>Yes</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Submit Button Outside the Accordion -->
+<div class="flex justify-end mt-6">
+    <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700 transition shadow">
+        Save Loan Product
+    </button>
+</div>
+
+</form> <!-- Ensure this matches your opening <form> and isn't duplicated -->
+
+<script>
+
+    // Toggle Collapsible Section for Loan Release Date
+    function toggleSection(sectionId) {
+        const section = document.getElementById(sectionId);
+        section.classList.toggle('hidden');
+    }
+
+    // Update loan release date field based on dropdown
+    document.getElementById('loan_release_date_enabled').addEventListener('change', function () {
+        var releaseDateInput = document.getElementById('loan_release_date');
+        if (this.value === 'yes') {
+            releaseDateInput.value = new Date().toISOString().split('T')[0]; // Set to today's date
+            releaseDateInput.disabled = false;
+        } else {
+            releaseDateInput.value = ''; // Reset the value
+            releaseDateInput.disabled = true;
+        }
+    });
+</script>
+
+@endsection
